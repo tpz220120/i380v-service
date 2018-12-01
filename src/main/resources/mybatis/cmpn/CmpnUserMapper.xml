@@ -1,0 +1,32 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.cmpnuser">
+     <!-- 获取平台营销活动列表 -->
+   <select id="getCmpnUser" resultType="com.weixin.po.CmpnUserPo" parameterType="com.weixin.po.CmpnUserPo">
+	    SELECT cmpnuser.*
+		FROM ebmkt.ebmkt_cmpn_recharge_partrecord cmpnuser
+		WHERE cmpnuser.partrecord_id = #{partrecord_id}
+		limit 0,1
+   </select>
+   <!-- 插入绑定详细表-->
+   <insert id="insert" parameterType="com.weixin.po.CmpnUserPo">
+       insert into ebmkt.ebmkt_cmpn_recharge_partrecord(partrecord_id,charge_user_id,cmpn_id,part_time,recharge_money,recharge_order_id
+       ,recharge_status,presend_redpkt_money,presend_redpkt_time) 
+       values(#{partrecord_id},#{charge_user_id},#{cmpn_id},SYSDATE(),#{recharge_money},#{recharge_order_id}
+       ,#{recharge_status},#{presend_redpkt_money},SYSDATE())
+   </insert>
+   
+   <update id="updateById" parameterType="com.weixin.po.CmpnUserPo">
+       UPDATE ebmkt.ebmkt_cmpn_recharge_partrecord set recharge_status = #{recharge_status},
+       recharge_order_id =  #{recharge_order_id},presend_redpkt_time = SYSDATE()
+       where 1 = 1 and partrecord_id = #{partrecord_id}
+       and charge_user_id =  #{charge_user_id}
+   </update>
+   
+   <delete id="delCmpnUser" parameterType="com.weixin.po.CmpnUserPo">
+       delete from ebmkt.ebmkt_cmpn_recharge_partrecord
+       where 1 = 1 and partrecord_id = #{partrecord_id}
+   </delete>
+</mapper>

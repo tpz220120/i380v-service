@@ -1,0 +1,48 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.checkDev">
+   <select id="getBindDevList" resultType="com.weixin.po.BindDevPo" parameterType="java.util.HashMap">
+    SELECT *,date_format(bindTime,'%Y-%m-%d %H:%i:%s') as bindTimeF
+	FROM ebike.test_binding_chargedevice bind
+	WHERE bind.subburo = #{org_no}
+	<if test="sbbh != null and '' != sbbh">
+		AND bind.chargedeviceNo like concat('%',#{sbbh},'%')
+	</if>
+	order by bindTime desc
+	limit 0,30
+   </select>
+   
+   <!-- 根据设备编码以及通讯id判断是否已绑定-->
+   <select id="sfBind" resultType="com.weixin.po.BindDevPo" parameterType="com.weixin.po.BindDevPo">
+    SELECT *
+	FROM ebike.test_binding_chargedevice bind
+	WHERE bind.subburo = #{subburo}
+	AND (bind.chargedeviceNo = #{chargedeviceNo} or bind.deviceId  = #{deviceId})
+   </select>  
+   
+   <!-- 插入绑定详细表-->
+   <insert id="insBdxx" parameterType="com.weixin.po.BindDevPo">
+       replace into ebike.test_binding_chargedevice(buro,subburo,chargedeviceNo,deviceId,protocolType,protocolVersion
+       ,plugCount,factory,modelNo,binder,bindTime) 
+       values(#{buro},#{subburo},#{chargedeviceNo},#{deviceId},#{protocolType},#{protocolVersion}
+       ,#{plugCount},#{factory},#{modelNo},#{binder},SYSDATE())
+   </insert>
+   
+   <!-- 根据设备编码以及通讯id判断是否已绑定-->
+   <select id="getBindDevPlugList" resultType="com.weixin.po.BindDevPo" parameterType="java.util.HashMap">
+    SELECT plugSn,testStatus,testStatusDesc
+	FROM ebike.test_testing_chargeplug testp
+	WHERE testp.subburo = #{org_no}
+	AND testp.chargedeviceNo = #{sbbh}
+   </select> 
+   
+   <!-- 在检测详情页面查询相关的设备检测信息-->
+   <select id="getBindDev" resultType="com.weixin.po.BindDevPo" parameterType="java.util.HashMap">
+    SELECT *
+	FROM ebike.test_binding_chargedevice bind
+	WHERE bind.subburo = #{org_no}
+	AND bind.chargedeviceNo = #{sbbh}
+   </select>
+</mapper>

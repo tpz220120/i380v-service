@@ -1,0 +1,19 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.alarmmx">
+   <!-- 根据工单id查找相应的数据-->
+   <select id="getAlarmDetailList" resultType="com.weixin.po.AlarmDetailPo" parameterType="String">
+	    SELECT opsworkorderId,handleSn,handler,handleDesc,
+	    DATE_FORMAT(wo.handleTime, '%Y-%m-%d   %H:%i:%s') as handleTime
+		FROM ebike.ops_workorder_handledetail wo
+		WHERE wo.opsworkorderId = #{value}
+		order by handleSn desc
+   </select>  
+   
+   <insert id="insert" parameterType="com.weixin.po.AlarmDetailPo">
+       INSERT into ebike.ops_workorder_handledetail(opsworkorderId,handleSn,handler,handleTime,handleDesc) 
+       values(#{opsworkorderId},#{handleSn},#{handler},now(),#{handleDesc})
+   </insert>
+</mapper>

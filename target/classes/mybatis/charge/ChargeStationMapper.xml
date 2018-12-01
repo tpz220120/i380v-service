@@ -1,0 +1,201 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.chargeStation">
+   <!-- 9月14号去掉已关联充电站限制  and station.id not in (select chargestationId from cisp_dev.dev_ebikechargedevice where chargestationId is not null) -->
+   <select id="getChargeStationList" parameterType="java.util.HashMap" resultType="com.weixin.po.ChargeStationPo">
+		select * from (SELECT power.subburo,
+			station.id,
+			power.name,
+			station.stationNo,
+			station.stationAddr,
+			station.region,
+			station.longitude,
+			station.latitude,
+			(select count(*) from cisp_dev.dev_ebikechargedevice where CHARGESTATIONID = station.id) as cnt
+		FROM
+      		cisp_dev.dev_powersystemresource power,
+			cisp_dev.dev_ebikechargestation station
+		WHERE
+			power.id = station.id
+			and power.classname = 'EBikeChargeStation'
+		<if test="orgno != null and '' != orgno">
+			AND power.SUBBURO = #{orgno}
+		</if>
+		<if test="name != null and '' != name">
+			AND (power.name like concat('%',#{name},'%') || station.stationNo like concat('%',#{name},'%'))
+		</if>
+		) t order by cnt asc,id DESC
+		limit #{start},#{limit}
+	</select>
+   
+    <select id="getGlStationList" parameterType="java.util.HashMap" resultType="com.weixin.po.ChargeStationPo">
+		SELECT power.subburo,
+			station.id,
+			power.name,
+			station.stationNo,
+			station.stationAddr,
+			station.region,
+			station.longitude,
+			station.latitude,
+			ops.opStatus,
+			dev.chargedeviceNo as cdzno
+		FROM
+			cisp_dev.dev_ebikechargestation station,
+			cisp_dev.dev_powersystemresource power,
+			cisp_dev.dev_ebikechargedevice dev left join ebike.ebike_chargedevice_ops ops on ops.chargedeviceId = dev.ID
+		WHERE power.id = station.id
+		and station.id = dev.chargestationId
+		and power.classname = 'EBikeChargeStation'
+		<if test="orgno != null and '' != orgno">
+			AND power.SUBBURO = #{orgno}
+		</if>
+		<if test="name != null and '' != name">
+			AND power.name like concat('%',#{name},'%')
+		</if>
+        order by ops.opStatus desc,dev.id desc
+		limit #{start},#{limit}
+	</select>
+	
+    <select id="getWxStationList" parameterType="java.util.HashMap" resultType="com.weixin.po.ChargeStationPo">
+        SELECT power.subburo,
+			station.id,
+			power.name,
+			station.stationNo,
+			station.stationAddr,
+			station.longitude,
+			station.latitude,
+			dev.plugCount,
+			(select count(*) from ebike.ebike_chargeplug_ops o,cisp_dev.dev_ebikechargeplug plug where plug.id = o.chargeplugId and o.opStatus = '0' and plug.chargedeviceId = dev.id) as kxnum,
+			<if test="latitude2 == null or '' == latitude2">
+			    '1' as showjl,
+				ROUND(6378.138*2*ASIN(SQRT(POW(SIN((#{latitude}*PI()/180-station.LATITUDE*PI()/180)/2),2)+
+				COS(#{latitude}*PI()/180)* COS(station.LATITUDE*PI()/180)*POW(SIN((#{longitude}*PI()/180-station.LONGITUDE*PI()/180)/2),2))),2) as distance,
+			</if>
+			<if test="latitude2 != null and '' != latitude2">
+			    '0' as showjl,
+			</if>
+			dev.chargedeviceNo as cdzno
+		FROM
+			cisp_dev.dev_ebikechargestation station,
+			cisp_dev.dev_powersystemresource power,
+			cisp_dev.dev_ebikechargedevice dev,
+			ebike.ebike_chargedevice_ops ops
+		WHERE power.id = station.id
+		and station.id = dev.chargestationId
+		and power.classname = 'EBikeChargeStation'
+		and ops.chargedeviceId = dev.ID
+		<if test="name != null and '' != name">
+			AND power.name like concat('%',#{name},'%')
+		</if>
+		<!-- 经纬度范围 -->
+		<if test="longitude2 != null and '' != longitude2">
+		    AND station.longitude &gt; #{longitude} and station.longitude &lt; #{longitude2}
+		</if>
+		<if test="latitude2 != null and '' != latitude2">
+		    AND station.latitude &gt; #{latitude} and station.latitude &lt; #{latitude2}
+		</if>
+		and ops.opStatus = '1'
+		<if test="latitude2 == null or '' == latitude2">
+			order by ROUND(6378.138*2*ASIN(SQRT(POW(SIN((#{latitude}*PI()/180-station.LATITUDE*PI()/180)/2),2)+
+			COS(#{latitude}*PI()/180)* COS(station.LATITUDE*PI()/180)*POW(SIN((#{longitude}*PI()/180-station.LONGITUDE*PI()/180)/2),2))),2)
+		</if>
+        <if test="latitude2 != null and '' != latitude2">
+			order by dev.id desc
+		</if>
+		limit #{start},#{limit}
+	</select>
+	
+    <!-- 根据插座编码获取充电站以及设备的信息 -->
+    <select id="getInfoByPlugNo" resultType="com.weixin.po.ChargeStationPo" parameterType="java.util.HashMap">
+        SELECT station.id,
+			power.name,
+			station.stationNo,
+			station.stationAddr,
+			dev.chargedeviceNo as chargeDevNo,
+			case mb.schemeType when '01' then '按时间' when '02' then '按电量' else '' end as chargeTypeName,
+		    mb.schemeType as chargeType,
+		    round(mb.unitPrice1,2) as unitPrice1,
+		    round(mb.unitPrice2,2) as unitPrice2,
+		    round(mb.unitPrice3,2) as unitPrice3,
+		    round(mb.unitPrice4,2) as unitPrice4,
+		    mb.stepPower1 as stepPower1,
+		    mb.stepPower2 as stepPower2,
+		    mb.stepPower3 as stepPower3,
+		    mb.closingPeriod as closingPeriod,
+		    round(mb.minCharge,2) as minCharge,
+		    mb.isReturn
+		FROM
+			cisp_dev.dev_ebikechargestation station,
+			(select * from cisp_dev.dev_powersystemresource where classname = 'EBikeChargeStation') power,
+			cisp_dev.dev_ebikechargedevice dev,
+			cisp_dev.dev_ebikechargeplug plug,
+			ebike.ebike_billingscheme mb,
+			<if test="wxid != null and '' != wxid">
+			    (select * from ebike.ebike_csbs_info where csbsType = '01'
+                and csbsStatus IN ('00', '02', '03')) cbi,
+      			ebike.ebike_csbs_info_userlist cbiul,
+      			(select * from ebike.ebike_chargeuser where chargeUserType = '10') cu
+			</if>
+			<if test="wxid == null or '' == wxid">
+			    ebike.ebike_cs_bs_rela rel
+			</if>
+		WHERE power.id = station.id
+		and station.id = dev.chargestationId
+		and plug.chargedeviceId = dev.id
+		AND plug.chargeplugNo = #{cdczno}
+		
+		<if test="wxid != null and '' != wxid">
+		    and cu.chargeUserMobile = cbiul.csbsUserMobile
+			and cbiul.csbsUsersListId = cbi.csbsUsersListId
+			and mb.schemeId = cbi.schemeId
+			and cbi.chargestationId = station.id
+			AND cu.chargeUserNo = #{wxid}
+		</if>
+		<if test="wxid == null or '' == wxid">
+		    and rel.chargestationId = station.id
+		    and rel.schemeId = mb.schemeId
+		</if>
+   </select>
+   
+  <select id="getChargeStationInfo" parameterType="java.util.HashMap" resultType="com.weixin.po.ChargeStationPo">
+		SELECT power.subburo,
+			power.name,
+			station.id,
+			station.stationNo,
+			station.stationAddr,
+			station.region,
+			station.longitude,
+			station.latitude
+		FROM
+      		cisp_dev.dev_powersystemresource power,
+			cisp_dev.dev_ebikechargestation station
+		WHERE power.id = station.id
+			and power.classname = 'EBikeChargeStation'
+		and station.id = #{id}
+	</select>
+	
+    <select id="getZfbMapStationList" parameterType="java.util.HashMap" resultType="com.weixin.po.ChargeStationPo">
+        SELECT DISTINCT station.id,
+            power.subburo,
+			power.name,
+			station.stationNo,
+			station.stationAddr,
+			station.longitude,
+			station.latitude
+		FROM
+			cisp_dev.dev_ebikechargestation station,
+			cisp_dev.dev_powersystemresource power,
+			cisp_dev.dev_ebikechargedevice dev,
+			ebike.ebike_chargedevice_ops ops
+		WHERE power.id = station.id
+		and station.id = dev.chargestationId
+		and power.classname = 'EBikeChargeStation'
+		and ops.chargedeviceId = dev.ID
+		and ops.opStatus = '1'
+		and ROUND(6378.138*2*ASIN(SQRT(POW(SIN((#{latitude}*PI()/180-station.LATITUDE*PI()/180)/2),2)+
+			COS(#{latitude}*PI()/180)* COS(station.LATITUDE*PI()/180)*POW(SIN((#{longitude}*PI()/180-station.LONGITUDE*PI()/180)/2),2))),2) &lt;= #{dis}
+		limit #{start},#{limit}
+	</select>
+</mapper>

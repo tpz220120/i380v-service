@@ -1,0 +1,38 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.chargeTj">
+   <!-- 查找营收统计数据-->
+   <select id="getYssj" resultType="com.weixin.po.ChargeTjPo" parameterType="java.util.HashMap">
+       	SELECT 
+       	<if test="type != 'month'">
+			 tj.statDate as rq,
+		</if>
+		<if test="type != 'day'">
+			 concat(substr(tj.statMonth,1,4),'-',substr(tj.statMonth,5,2)) as rq,
+		</if>
+	    sum(chargeCnt) as chargeCnt,round(sum(chargeIncome),2) as chargeIncome,
+	    round(sum(chargeCost),2) as chargeCost,round(sum(chargeProfit),2) as chargeProfit
+		from (select id,subburo from cisp_dev.dev_powersystemresource where CLASSNAME = 'EBikeChargeStation') dz
+		<if test="type != 'month'">
+			 ,ebike.stat_chargestation_day tj
+		</if>
+		<if test="type != 'day'">
+			 ,ebike.stat_chargestation_month tj
+		</if>
+		
+		where dz.id = tj.chargestationId
+		and dz.subburo = #{org_no}
+		<if test="type != 'month'">
+		    and DATE_FORMAT(tj.statDate,'%Y-%m') = #{selrq}
+			group by statDate
+			order by tj.statDate desc
+		</if>
+		<if test="type != 'day'">
+			and substr(tj.statMonth,1,4) = #{selrq}
+			group by statMonth
+			order by tj.statMonth desc
+		</if>
+   </select>  
+</mapper>

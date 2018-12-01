@@ -1,0 +1,182 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.chargeRecord">
+    <!-- 扫码二维码获取充电详细信息-->
+   <select id="getChargeRecord" resultType="com.weixin.po.ChargeRecordPo" parameterType="String">
+		SELECT p.name as cdzname,station.stationAddr,dev.chargedeviceNo,plug.plugSn,
+			DATE_FORMAT(r.chargeTime, '%Y-%m-%d %H:%i:%s') as chargeTime,
+			round(r.chargeMoney,2) as chargeMoney,
+		    DATE_FORMAT(r.chargeOpenTime, '%Y-%m-%d %H:%i:%s') as chargeOpenTime,
+		    case r.schemeType when '01' then '按时间' when '02' then '按电量' else '' end as chargeTypeName,
+		    r.schemeType as chargeType,
+		    round(r.unitPrice1,2) as unitPrice1,
+		    round(r.unitPrice2,2) as unitPrice2,
+		    round(r.unitPrice3,2) as unitPrice3,
+		    round(r.unitPrice4,2) as unitPrice4,
+		    r.stepPower1 as stepPower1,
+		    r.stepPower2 as stepPower2,
+		    r.stepPower3 as stepPower3,
+		    r.closingPeriod as closingPeriod,
+		    round(r.minCharge,2) as minCharge,
+		    case r.chargeAmount when '01' then round(r.chargeAmount) else r.chargeAmount end as chargeAmount,
+		   	r.chargeAmount as chargeAmount,
+			r.usageAmount as usageAmount,
+			r.surplusAmount as surplusAmount,
+			round(r.curPower * 1000) as curPower,
+			round(r.maxPower * 1000) as maxPower,
+			round(r.avgPower * 1000) as avgPower,
+			r.isReturn,
+    	r.chargeOpenFlag,
+    	case r.chargeOpenFlag when '1' then '充电等待中' when '0' then '充电开启成功' 
+    	when '-1' then '设备总体已经超过最大功率' else '充电开启失败' end as chargeOpenFlagName
+		FROM ebike.ebike_chargerecord r,
+		cisp_dev.dev_ebikechargeplug plug,
+		cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargestation station,
+		(select * from cisp_dev.dev_powersystemresource where classname='EBikeChargeStation') p
+		WHERE plug.id = r.chargeplugId
+		and dev.id = r.chargedeviceId
+		and r.chargestationId = station.id
+		and station.id = p.id
+		and plug.chargeplugNo = #{value}
+   </select>  
+   
+   <!-- 当前充电记录多条 -->
+   <select id="getChargeRecordList" resultType="com.weixin.po.ChargeRecordPo" parameterType="java.util.HashMap">
+      SELECT r.chargeRecordId as recordId,DATE_FORMAT(r.chargeTime, '%Y-%m-%d %H:%i:%s') as chargeTime,
+	    cast(r.chargeMoney as decimal(9,2)) as chargeMoney,
+	    DATE_FORMAT(r.chargeOpenTime, '%Y-%m-%d %H:%i:%s') as chargeOpenTime,
+	    case r.schemeType when '01' then '按时间' when '02' then '按电量' else '' end as chargeTypeName,
+	    r.schemeType as chargeType,
+	    cast(r.chargeAmount as decimal(9,2)) as chargeAmount,
+	    plug.chargeplugNo,
+	    r.chargeplugId,
+    	r.chargeUserId,
+    	r.chargeOpenFlag,
+    	plug.plugSn,
+    	case r.chargeOpenFlag when '1' then '充电等待中' when '0' then '充电开启成功' 
+    	when '-1' then '设备总体已经超过最大功率' else '充电开启失败' end as chargeOpenFlagName
+		FROM ebike.ebike_chargerecord r,
+		cisp_dev.dev_ebikechargeplug plug,
+		ebike.ebike_chargeuser user
+		WHERE plug.id = r.chargeplugId
+		and r.chargeUserId = user.chargeUserId
+		and user.chargeUserNo = #{userno}
+   </select>  
+   
+   <!-- 历史充电记录多条 -->
+   <select id="getHisChargeRecordList" resultType="com.weixin.po.ChargeRecordPo" parameterType="java.util.HashMap">
+      SELECT r.csworkorderId as orderId,
+        r.isCsRefund as sftf,
+        r.csrefundResult as orderStatus,
+        r.chargeRecordId as recordId,p.name as cdzname,station.stationAddr,dev.chargedeviceNo,plug.plugSn,
+      	DATE_FORMAT(r.chargeTime, '%Y/%m/%d %H:%i:%s') as chargeTime,
+	    cast(r.chargeMoney as decimal(9,2)) as chargeMoney,
+	    cast(r.returnMoney as decimal(9,2)) as returnMoney,
+	    case r.income when 0 then 0 else cast(r.income as decimal(9,2)) end as income,
+	    DATE_FORMAT(r.chargeOpenTime, '%H:%i:%s') as chargeOpenTime,
+	    DATE_FORMAT(r.chargeFinishTime, '%H:%i:%s') as chargeFinishTime,
+	    case r.schemeType when '01' then '按时间' when '02' then '按电量' else '' end as chargeTypeName,
+	    r.schemeType as chargeType,
+	    cast(r.chargeAmount as decimal(9,2)) as chargeAmount,
+	    plug.chargeplugNo,
+	    r.chargeplugId,
+    	r.chargeUserId,
+    	r.chargeOpenFlag,
+    	case r.chargeOpenFlag when '1' then '充电等待中' when '0' then '充电开启成功' 
+    	when '-1' then '设备总体已经超过最大功率' else '充电开启失败' end as chargeOpenFlagName
+		FROM ebike.ebike_chargerecord_his r,
+		cisp_dev.dev_ebikechargeplug plug,
+		ebike.ebike_chargeuser user,
+		cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargestation station,
+		(select * from cisp_dev.dev_powersystemresource where classname='EBikeChargeStation') p
+		WHERE plug.id = r.chargeplugId
+		and r.chargeUserId = user.chargeUserId
+		and dev.id = r.chargedeviceId
+		and r.chargestationId = station.id
+		and station.id = p.id
+		and user.chargeUserNo = #{userno}
+		<if test="month == 'null' or '' == month">
+			and DATE_FORMAT(r.chargeTime, '%Y-%m') = DATE_FORMAT(now(), '%Y-%m')
+		</if>
+		<if test="month != 'null' and '' != month">
+			and DATE_FORMAT(r.chargeTime, '%Y-%m') = #{month}
+		</if>
+		order by r.chargeTime desc
+   </select>  
+   
+   <!-- 根据记录id获取充电详细信息 -->
+   <select id="getDqChargeRecord" resultType="com.weixin.po.ChargeRecordPo" parameterType="String">
+      SELECT r.chargeRecordId as recordId,p.name as cdzname,station.stationAddr,dev.chargedeviceNo,plug.plugSn,
+			DATE_FORMAT(r.chargeTime, '%Y-%m-%d %H:%i:%s') as chargeTime,
+			round(r.chargeMoney,2) as chargeMoney,
+		    DATE_FORMAT(r.chargeOpenTime, '%Y-%m-%d %H:%i:%s') as chargeOpenTime,
+		    case r.schemeType when '01' then '按时间' when '02' then '按电量' else '' end as chargeTypeName,
+		    r.schemeType as chargeType,
+		    round(r.unitPrice1,2) as unitPrice1,
+		    round(r.unitPrice2,2) as unitPrice2,
+		    round(r.unitPrice3,2) as unitPrice3,
+		    round(r.unitPrice4,2) as unitPrice4,
+		    r.stepPower1 as stepPower1,
+		    r.stepPower2 as stepPower2,
+		    r.stepPower3 as stepPower3,
+		    r.closingPeriod as closingPeriod,
+		    round(r.minCharge,2) as minCharge,
+		   	r.chargeAmount as chargeAmount,
+			r.usageAmount as usageAmount,
+			r.surplusAmount as surplusAmount,
+			round(r.curPower * 1000) as curPower,
+			round(r.maxPower * 1000) as maxPower,
+			round(r.avgPower * 1000) as avgPower,
+			r.isReturn,
+    	r.chargeOpenFlag,
+    	plug.chargeplugNo,
+    	case r.chargeOpenFlag when '1' then '充电等待中' when '0' then '充电开启成功' 
+    	when '-1' then '设备总体已经超过最大功率' else '充电开启失败' end as chargeOpenFlagName
+		FROM ebike.ebike_chargerecord r,
+		cisp_dev.dev_ebikechargeplug plug,
+		cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargestation station,
+		(select * from cisp_dev.dev_powersystemresource where classname='EBikeChargeStation') p
+		WHERE plug.id = r.chargeplugId
+		and dev.id = r.chargedeviceId
+		and r.chargestationId = station.id
+		and station.id = p.id
+		and r.chargeRecordId = #{value}
+   </select>  
+   
+    <!-- 当前充电记录简略显示 包含电站，设备编号，插座序号等 -->
+    <select id="getDqcdList" parameterType="String" resultType="com.weixin.po.ChargeRecordPo">
+		SELECT r.chargeRecordId as recordId,
+		p.name as cdzname,station.stationAddr,
+		DATE_FORMAT(r.chargeTime, '%Y-%m-%d %H:%i:%s') as chargeTime,
+		dev.chargedeviceNo,
+		plug.plugSn,
+		r.chargeOpenFlag,
+	    	case r.chargeOpenFlag when '1' then '充电等待中' when '0' then '充电开启成功' 
+	    	when '-1' then '设备总体已经超过最大功率' else '充电开启失败' end as chargeOpenFlagName
+				FROM ebike.ebike_chargerecord r,
+				cisp_dev.dev_ebikechargeplug plug,
+				ebike.ebike_chargeuser user,
+				cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargestation station,
+		(select * from cisp_dev.dev_powersystemresource where classname='EBikeChargeStation') p
+				WHERE plug.id = r.chargeplugId
+		and r.chargeUserId = user.chargeUserId
+		and dev.id = r.chargedeviceId
+		and r.chargestationId = station.id
+		and station.id = p.id
+		and user.chargeUserNo = #{value}
+	</select>
+	
+    <!-- 申请退款后变更历史记录表信息，标志为已申请退款填入退款工单号 并且标记退费结果为等待处理 -->
+    <update id="updateById" parameterType="com.weixin.po.ChargeRecordPo">
+        update ebike.ebike_chargerecord_his set isCsRefund = 'Y'
+        ,csrefundResult = 'W'
+		,csworkorderId = #{orderId} 
+        where chargeRecordId = #{recordId}
+   </update>
+</mapper>

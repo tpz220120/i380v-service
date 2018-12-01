@@ -1,0 +1,31 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.redpktFlow">
+   <!-- 查找红包流水-->
+   <select id="getRedPktFlowList" resultType="com.weixin.po.RedPktAccountFlowPo" parameterType="java.util.HashMap">
+	    SELECT accountflow.*,date_format(accountflow.create_time,'%Y-%m-%d %H:%i:%s') as c_time_format,
+	    case accountflow.journal_type when 1 then '充电支付' when 2 then '充电退款' when 3 then concat('充',round(cmpn.recharge_money,0),'元赠送',round(cmpn.presend_redpkt_money,0),'元红包') when 4 then '红包失效' else '' end hbType
+		FROM ebmkt.chargeuser_redpkt_account_journal accountflow left join ebmkt.ebmkt_cmpn_recharge_partrecord cmpn on cmpn.partrecord_id = accountflow.business_id
+        ,ebike.ebike_chargeuser u
+		WHERE u.chargeUserId = accountflow.charge_user_id
+		and u.chargeUserNo = #{wxid}
+		<if test="month == 'null' or '' == month">
+			and DATE_FORMAT(accountflow.create_time, '%Y-%m') = DATE_FORMAT(now(), '%Y-%m')
+		</if>
+		<if test="month != 'null' and '' != month">
+			and DATE_FORMAT(accountflow.create_time, '%Y-%m') = #{month}
+		</if>
+		order by create_time desc
+   </select>
+   
+   <!-- 插入红包记录-->
+   <insert id="insert" parameterType="com.weixin.po.RedPktAccountFlowPo">
+	   insert into ebmkt.chargeuser_redpkt_account_journal(journal_id,charge_user_id,journal_money,journal_dir,journal_type,
+       create_time,business_module,business_id,journal_remark) 
+       
+       values(#{journal_id},#{charge_user_id},#{journal_money},#{journal_dir},#{journal_type},SYSDATE()
+       ,#{business_module},#{business_id},#{journal_remark})
+   </insert>
+</mapper>

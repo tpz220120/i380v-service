@@ -1,0 +1,102 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.khfw">
+   <!-- 根据工单id查找相应的数据-->
+   <select id="getWorkOrder" resultType="com.weixin.po.WorkOrderPo" parameterType="String">
+	    SELECT w.*,DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat
+		FROM ebike.csc_workorder w
+		WHERE w.csworkorderId = #{value}
+   </select>
+   
+   
+   <!-- 根据工单id查找历史记录  已归档-->
+   <select id="getHisWorkOrder" resultType="com.weixin.po.WorkOrderPo" parameterType="String">
+	    SELECT w.*,DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat,
+	    DATE_FORMAT(w.archiveTime, '%Y-%m-%d   %H:%i:%s') as archiveTimeFormat
+		FROM ebike.csc_workorder_his w
+		WHERE w.csworkorderId = #{value}
+   </select>  
+   
+   <select id="getWorkOrderList" resultType="com.weixin.po.WorkOrderPo" parameterType="String">
+        select * from (SELECT DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat,
+		    csworkorderId,csworkorderType,csworkorderStatus,csworkorderDesc,csworkorderAttach,'start' as tsjg
+			FROM ebike.csc_workorder w,ebike.ebike_chargeuser user
+			WHERE w.chargeUserId = user.chargeUserId 
+			and w.csworkorderType = '20'
+			and user.chargeUserNo = #{value}		
+			union 
+			SELECT DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat,
+		    csworkorderId,csworkorderType,csworkorderStatus,csworkorderDesc,csworkorderAttach,'over' as tsjg
+			FROM ebike.csc_workorder_his w,ebike.ebike_chargeuser user
+			WHERE w.chargeUserId = user.chargeUserId 
+			and w.csworkorderType = '20'
+			and user.chargeUserNo = #{value}) t
+		order by t.commitTimeFormat desc
+   </select>  
+   
+   <!-- 查找此运营商的未处理工单基本信息-->
+   <select id="getWclGdList" resultType="com.weixin.po.WorkOrderPo" parameterType="String">
+	    SELECT DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat,
+	    csworkorderId,csworkorderType,csworkorderStatus,csworkorderDesc,csworkorderAttach,returnHandleResult
+		FROM ebike.csc_workorder w
+		WHERE w.csworkorderNode = '30'
+		and w.csworkorderStatus = '20'
+		and w.nodeSubburo = #{value}
+		order by w.commitTime desc
+   </select> 
+   
+   <!-- 查找此运营商的已处理工单(当前工单节点不为运营商的节点)基本信息-->
+   <select id="getYclGdList" resultType="com.weixin.po.WorkOrderPo" parameterType="String">
+	   SELECT distinct w.csworkorderId,DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat
+	    ,w.csworkorderType,w.csworkorderStatus,
+      	w.csworkorderDesc,w.csworkorderAttach,w.returnHandleResult
+		FROM ebike.csc_workorder w,ebike.csc_workorder_handledetail cs
+		WHERE w.csworkorderId = cs.csworkorderId
+		and cs.nodeSubburo = #{value}
+		and w.csworkorderNode != '30'
+		order by w.commitTime desc
+   </select>
+   
+   <!-- 查找此运营商关联的已归档工单基本信息-->
+   <select id="getYgdGdList" resultType="com.weixin.po.WorkOrderPo" parameterType="String">
+	   SELECT distinct w.csworkorderId,DATE_FORMAT(w.commitTime, '%Y-%m-%d   %H:%i:%s') as commitTimeFormat,
+	    w.csworkorderType,w.csworkorderStatus,
+      	w.csworkorderDesc,w.csworkorderAttach,w.returnHandleResult
+		FROM ebike.csc_workorder_his w,ebike.csc_workorder_handledetail cs
+		WHERE w.csworkorderId = cs.csworkorderId
+		and w.csworkorderStatus = '40'
+		and cs.nodeSubburo = #{value}
+		order by w.commitTime desc
+   </select>
+   
+   <update id="updateById" parameterType="com.weixin.po.WorkOrderPo">
+        update ebike.csc_workorder set csworkorderNode = #{csworkorderNode} 
+        <if test="nodeSubburo != null and '' != nodeSubburo">
+			,nodeSubburo = #{nodeSubburo} 
+		</if>
+        where csworkorderId = #{csworkorderId}
+   </update>
+	
+   <insert id="insert" parameterType="com.weixin.po.WorkOrderPo">
+       INSERT into ebike.csc_workorder(csworkorderId,csworkorderType,csworkorderStatus,csworkorderNode,chargeUserId,commitTime,csworkorderDesc,csworkorderAttach,
+       needReturn,relaObjectType,chargeRecordId) values(#{csworkorderId},
+       #{csworkorderType},#{csworkorderStatus},#{csworkorderNode},#{chargeUserId},now(),#{csworkorderDesc},#{csworkorderAttach},
+       #{needReturn},#{relaObjectType},#{chargeRecordId})
+   </insert>
+   
+   <insert id="insHis" parameterType="com.weixin.po.WorkOrderPo">
+      INSERT into ebike.csc_workorder_his
+		select csworkorderId,csworkorderType,'40',chargeUserId,
+		commitTime,csworkorderDesc,csworkorderAttach,#{archiver},now(),#{archiveDesc},#{archiveAttach},needReturn,returnHandleResult,
+		relaObjectType,chargeRecordId,chargedeviceNo,chargeplugNo,
+		chargestationNo,chargestationName,chargestationAddr,orgNo,orgName,oppersonName,oppersonMobile
+		 from ebike.csc_workorder
+		where csworkorderId = #{csworkorderId}
+   </insert>
+   
+   <delete id="delGd" parameterType="com.weixin.po.WorkOrderPo">
+       delete from ebike.csc_workorder where csworkorderId = #{csworkorderId}
+   </delete>
+</mapper>

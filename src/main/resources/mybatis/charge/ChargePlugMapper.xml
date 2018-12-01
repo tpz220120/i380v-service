@@ -1,0 +1,97 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.chargePlug">
+   <select id="getChargePlugInfo" resultType="com.weixin.po.ChargePlugPo" parameterType="String">
+        SELECT power.subburo,
+		plug.id as chargeplugId,
+		plug.chargeplugNo,
+		plug.chargedeviceId,
+		plug.plugSn,
+		plug.plugId,
+		s.opStatus
+	FROM
+		cisp_dev.dev_powersystemresource power,
+		cisp_dev.dev_ebikechargeplug plug left join ebike.ebike_chargeplug_ops s on plug.id = s.chargeplugId
+	WHERE power.classname = 'EBikeChargePlug'
+		and power.id = plug.id
+		AND plug.chargeplugNo = #{value}
+   </select>
+   
+   <select id="getChargePlugInfo2" resultType="com.weixin.po.ChargePlugPo" parameterType="java.util.HashMap">
+        SELECT power.subburo,
+		plug.id as chargeplugId,
+		plug.chargeplugNo,
+		plug.chargedeviceId,
+		plug.plugSn,
+		plug.plugId,
+		s.opStatus
+	FROM
+		cisp_dev.dev_powersystemresource power,
+		cisp_dev.dev_ebikechargeplug plug left join ebike.ebike_chargeplug_ops s on plug.id = s.chargeplugId
+	WHERE power.classname = 'EBikeChargePlug'	
+		and power.id = plug.id
+		AND plug.chargeplugNo = #{plugno}
+		and power.subburo= #{orgno}
+   </select>
+   
+   <!-- 查看充电插座的设备是否是免支付的设备 -->
+   <select id="sfmzf" resultType="com.weixin.po.ChargePlugPo" parameterType="String">
+        SELECT plug.id as chargeplugId,
+		plug.chargeplugNo,
+		plug.chargedeviceId,
+		plug.plugSn,
+		plug.plugId
+	FROM ebike.ebike_billingscheme jffa,
+		ebike.ebike_cs_bs_rela rela,
+		cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargeplug plug
+	WHERE plug.chargeplugNo = #{value}
+	and plug.CHARGEDEVICEID = dev.ID
+	and dev.CHARGESTATIONID = rela.chargestationId
+	and rela.schemeId = jffa.schemeId
+	and jffa.unitPrice1 = 0
+   </select>
+   
+   <!-- 根据充电设备编码获取插座列表以及状态 -->
+   <select id="getChargePlugList" resultType="com.weixin.po.ChargePlugPo" parameterType="String">
+        SELECT power.subburo,
+		plug.id as chargeplugId,
+		plug.chargeplugNo,
+		plug.chargedeviceId,
+		plug.plugSn,
+		plug.plugId,
+		s.opStatus
+	FROM
+		cisp_dev.dev_powersystemresource power,
+		cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargeplug plug left join ebike.ebike_chargeplug_ops s on plug.id = s.chargeplugId
+	WHERE power.classname = 'EBikeChargePlug'
+		and power.id = plug.id
+		and dev.chargedeviceNo = #{value}
+		AND dev.id = plug.chargedeviceId
+		order by plug.plugSn asc
+   </select>
+   
+   <insert id="insDebugInfo" parameterType="java.util.HashMap">
+       replace into ebike.ebike_chargeplug_debuginfo 
+       values(#{chargeplugId},SYSDATE(),'start',#{opertor},#{debugResult},'')
+   </insert>
+   
+   <!-- 根据单位查找本单位下所有的在线设备插座调试结果 -->
+   <select id="getPlugDebugList" resultType="java.util.HashMap" parameterType="String">
+       select dev.CHARGEDEVICENO as devno,plug.PLUGSN as czh,debug.debugResult as tsjg from cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargeplug plug,
+		cisp_dev.dev_powersystemresource power,
+		ebike.ebike_chargeplug_debuginfo debug,
+		ebike.ebike_chargedevice_ops ops
+		where dev.ID = power.ID
+		and power.SUBBURO = #{value}
+		and dev.id = plug.CHARGEDEVICEID
+		and plug.ID = debug.chargeplugId
+		and ops.chargedeviceId = dev.ID
+		and ops.opStatus = '1'
+		order by dev.CHARGEDEVICENO,plug.PLUGSN
+   </select>
+</mapper>

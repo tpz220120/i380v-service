@@ -1,0 +1,28 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.cmpn">
+   <!-- 获取平台营销活动列表 -->
+   <select id="getCmpnList" resultType="com.weixin.po.CmpnPo" parameterType="java.util.HashMap">
+	    SELECT cmpn.*,date_format(cmpn.update_time,'%Y-%m-%d') as create_time_format,cmpnuser.recharge_money,
+	    cmpnuser.presend_redpkt_money
+		FROM ebmkt.ebmkt_cmpn cmpn,ebmkt.ebmkt_cmpn_recharge cmpnuser
+		WHERE cmpn.cmpn_id = cmpnuser.cmpn_id
+		and valid = '1'
+		order by cmpnuser.recharge_money asc,create_time desc
+   </select>
+   
+   <select id="getCmpnDetail" resultType="com.weixin.po.CmpnPo" parameterType="java.util.HashMap">
+	    SELECT cmpn.*,date_format(cmpn.cmpn_enddate,'%Y-%m-%d') as end_time,cmpnuser.recharge_money,
+	    cmpnuser.presend_redpkt_money
+	    <if test="userno != 'null' and '' != userno">
+			,(select count(*) 
+		    from ebmkt.ebmkt_cmpn_recharge_partrecord t,ebike.ebike_chargeuser u where u.chargeUserId = t.charge_user_id
+	        and t.cmpn_id = cmpn.cmpn_id and u.chargeUserNo = #{userno}) as ycycs
+		</if>
+		FROM ebmkt.ebmkt_cmpn cmpn,ebmkt.ebmkt_cmpn_recharge cmpnuser
+		WHERE cmpn.cmpn_id = cmpnuser.cmpn_id
+		and cmpn.cmpn_id = #{cmpn_id}
+   </select>
+</mapper>

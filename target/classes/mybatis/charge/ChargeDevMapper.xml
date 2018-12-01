@@ -1,0 +1,60 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.chargeDev">
+   <!-- 查找临时表充电设备数据 and subburo = #{orgno}-->
+   <select id="getChargeDevInfo" resultType="com.weixin.po.ChargeDevPo" parameterType="java.util.HashMap">
+    SELECT *
+	FROM ebike.ebike_assets_chargedevice dev
+	WHERE dev.chargedeviceNo = #{devno}
+   </select>  
+   
+   <!-- 查找是否已关联电站，如果关联，跳转到详细页面-->
+   <select id="sfygl" resultType="com.weixin.po.ChargeDevPo" parameterType="String">
+     SELECT
+		lsdev.*, dev.chargestationId,
+		station.stationNo,
+		station.stationAddr,
+	    s.name as cdzname,
+        ops.opStatus,
+        s.subburo
+	FROM
+		ebike.ebike_assets_chargedevice lsdev,
+		cisp_dev.dev_ebikechargedevice dev left join ebike.ebike_chargedevice_ops ops on ops.chargedeviceId = dev.ID,
+		cisp_dev.dev_ebikechargestation station,
+	  (select * from cisp_dev.dev_powersystemresource devpower where devpower.classname = 'EBikeChargeStation') s
+	WHERE
+		lsdev.chargedeviceNo = dev.chargedeviceNo
+	AND dev.chargestationId = station.ID
+	and s.id = station.id
+	and lsdev.chargedeviceNo = #{value}
+   </select>
+   
+   <!-- 根据充电站的id查找相应充电设备列表-->
+   <select id="getChargeDevList" resultType="com.weixin.po.ChargeDevPo" parameterType="java.util.HashMap">
+       SELECT dev.id as chargedeviceId,dev.chargedeviceNo,dev.plugCount,
+        dev.chargestationId,
+		station.stationNo,
+		station.stationAddr,
+	    s.name as cdzname,
+        ops.opStatus,
+        s.subburo
+	FROM
+		cisp_dev.dev_ebikechargedevice dev,
+		ebike.ebike_chargedevice_ops ops,
+		cisp_dev.dev_ebikechargestation station,
+	    (select * from cisp_dev.dev_powersystemresource devpower where devpower.classname = 'EBikeChargeStation') s
+	WHERE ops.chargedeviceId = dev.ID
+	AND dev.chargestationId = station.ID
+	and s.id = station.id
+	and s.id = #{id}
+   </select>  
+   
+   <!-- 根据电站id获取电站下属的设备充电桩列表-->
+   <select id="getChargeDevByStation" resultType="com.weixin.po.ChargeDevPo" parameterType="java.util.HashMap">
+    SELECT dev.CHARGEDEVICENO
+	FROM cisp_dev.dev_ebikechargedevice dev
+	WHERE dev.CHARGESTATIONID =#{id}
+   </select>
+</mapper>

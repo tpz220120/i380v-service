@@ -1,0 +1,20 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.khfwxx">
+   <!-- 根据工单id查找相应的数据-->
+   <select id="getWorkOrderDetailList" resultType="com.weixin.po.WorkOrderDetailPo" parameterType="String">
+	    SELECT csworkorderId,handleSn,handleNode,
+	    nodeSubburo,handler,handleDesc,
+	    DATE_FORMAT(wo.handleTime, '%Y-%m-%d   %H:%i:%s') as handleTime
+		FROM ebike.csc_workorder_handledetail wo
+		WHERE wo.csworkorderId = #{value}
+		order by handleSn desc
+   </select>  
+   
+   <insert id="insert" parameterType="com.weixin.po.WorkOrderDetailPo">
+       INSERT into ebike.csc_workorder_handledetail(csworkorderId,handleSn,handleNode,nodeSubburo,handler,handleTime,handleDesc) 
+       values(#{csworkorderId},#{handleSn},#{handleNode},#{nodeSubburo},#{handler},now(),#{handleDesc})
+   </insert>
+</mapper>

@@ -1,0 +1,22 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="i380v.user">
+    <select id="findByUserno" resultType="com.weixin.po.UserPo" parameterType="String">
+        SELECT user_id,
+        user_no,user_name,user_password,user_org_no,user_org_name,user_dept_no,user_dept_name, user_mobile
+         FROM cisp_sys.bp_user where user_no = #{value};
+    </select>
+    
+    <!-- 运营商根据业务逻辑区分是厂商或者是运营商登录，从而区分不同的首页 -->
+    <select id="findXxByUserno" resultType="com.weixin.po.UserPo" parameterType="String">
+        SELECT user_id,
+        user_no,user_name,user_password,user_org_no,user_org_name,user_dept_no,user_dept_name, user_mobile,
+        fac.factory as fac,
+        fac.defProtocolType as txgylx,fac.defProtocolVersion as txgybb,
+        fac.defModelNo as sbxh,fac.selModelNoList as sbxhlist
+         FROM cisp_sys.bp_user user left join ebike.test_factory_config fac on user.user_org_no = fac.subburo
+         where user_no = #{value}
+    </select>
+</mapper>

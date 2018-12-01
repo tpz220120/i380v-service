@@ -1,0 +1,15 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="i380v.sms">
+    <insert id="insert" parameterType="com.weixin.po.SmsPo">
+       INSERT into ebike.ebike_log_sms(mobile,operation_type,identify_code,status,create_time) 
+       values(#{mobile},#{operation_type},#{identify_code},#{status},now())
+    </insert>
+    
+    <select id="findRecord" resultType="com.weixin.po.SmsPo" parameterType="com.weixin.po.SmsPo">
+        SELECT * FROM ebike.ebike_log_sms where mobile = #{mobile} and identify_code = #{identify_code} 
+        and date_add(create_time, interval 2 minute) >= now()
+    </select>
+</mapper>

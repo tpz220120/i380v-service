@@ -1,0 +1,109 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.main">
+   <!-- 查找10条当前充电数据-->
+   <select id="getDqcdjl" resultType="java.util.HashMap">
+        select * from (
+	    	SELECT u.chargeUserName as uname,
+		    t.chargeOpenTime,
+		    DATE_FORMAT(t.chargeTime, '%Y-%m-%d') as openTime,
+		    DATE_FORMAT(t.chargeTime, '%H:%i:%s') as openTime2,round(t.chargeMoney) as money,p.stationAddr as sname
+			FROM ebike.ebike_chargerecord t,ebike.ebike_chargeuser u,
+			cisp_dev.dev_ebikechargestation p
+			where u.chargeUserId = t.chargeUserId
+			and p.id = t.chargestationId
+			order by t.chargeTime desc limit 0,10
+		) tt
+   </select>
+   
+   <!-- 定时刷新时查找10条当前充电数据  倒叙排-->
+   <select id="getDqcdjl2" resultType="java.util.HashMap">
+        select * from (
+	    SELECT u.chargeUserName as uname,
+      	t.chargeOpenTime,
+      	t.chargeTime,
+	    DATE_FORMAT(t.chargeTime, '%Y-%m-%d') as openTime,
+	    DATE_FORMAT(t.chargeTime, '%H:%i:%s') as openTime2,round(t.chargeMoney) as money,p.stationAddr as sname
+		FROM ebike.ebike_chargerecord t,ebike.ebike_chargeuser u,
+		cisp_dev.dev_ebikechargestation p
+		where u.chargeUserId = t.chargeUserId
+		and p.id = t.chargestationId
+		order by t.chargeTime desc limit 0,10
+		)tt
+		order by tt.chargeTime asc 
+   </select>
+   
+   <!-- 展示充电人数以及总金额-->
+   <select id="getZs" resultType="java.util.HashMap">
+     	SELECT
+			count(*) AS cdrs,
+			round(
+				CASE WHEN sum(t.chargeMoney) is null
+				THEN
+					0
+				ELSE
+					sum(t.chargeMoney)
+				END
+			) AS cdzje
+		FROM ebike.ebike_chargerecord t
+   </select>
+   
+   <!-- 获取投运充电站的在线列表 -->
+   <select id="getDqcdzList" resultType="java.util.HashMap">
+	   SELECT station.NAME AS name,
+	   round(s.LONGITUDE,5) as jd,
+	   round(s.LATITUDE,5) as wd,
+	   concat('[',round(s.LONGITUDE,5),',',round(s.LATITUDE,5),']') as value,
+		s.stationAddr AS addr,
+		ops.opStatus ops,
+		DATE_FORMAT(ops.latestCommTime, '%Y-%m-%d %H:%i:%s') lasttime,
+		dev.CHARGEDEVICENO devno
+	FROM
+		cisp_dev.dev_ebikechargedevice dev,
+		cisp_dev.dev_ebikechargestation s,
+		ebike.ebike_chargedevice_ops ops,
+		(
+			SELECT
+				*
+			FROM
+				cisp_dev.dev_powersystemresource
+			WHERE
+				classname = 'EBikeChargeStation'
+		) station
+	WHERE
+		STATION.id = s.ID
+	AND s.id = dev.CHARGESTATIONID
+	AND dev.id = ops.chargedeviceId
+	AND  station.status = '20'
+   </select>
+   
+ <!-- 获取首页的全国指标总数 包含 累计充电总次数：CUMCRG_TOTAL_CNT 充电插座总数-修改为投运充电插座数：TOTAL_CP_CNT-PTS_CP_CNT 累计充电用户数 USERCNT_TOTAL
+   累计充电收入：INCOME_TOTAL 充电站总数-修改为投运充电站数量：TOTAL_CS_CNT-PTS_CS_CNT  正在充电用户数 ：USERCNT_BECRGING 正在充电收入：INCOME_BECRGING  
+   正在使用充电插座数量 BEUSING_CP_CNT 可用（空闲）充电插座数量 USABLE_CP_CNT 不可用（离线）充电插座数量 UNUSABLE_CP_CNT-->
+   <select id="getQgCdzb" resultType="java.util.HashMap">
+	 SELECT indCode code,indValue as zbz
+	 FROM ebike.ebike_adcodeind_realtime zb
+	 WHERE adcode = '100000' and subburo = '000000000' and indCode in ('CUMCRG_TOTAL_CNT','PTS_CP_CNT','USERCNT_TOTAL'
+	 ,'INCOME_TOTAL','PTS_CS_CNT','USERCNT_BECRGING','INCOME_BECRGING','BEUSING_CP_CNT','USABLE_CP_CNT','UNUSABLE_CP_CNT','BEREPAIRING_CP_CNT')
+	 <if test="subburo != '' and subburo != null">
+        and subburo = #{subburo}
+     </if>
+   </select>
+   
+   <!-- 获取各省市自治区的指标 包含 累计充电总次数：CUMCRG_TOTAL_CNT 充电插座总数-修改为投运充电插座数：TOTAL_CP_CNT-PTS_CP_CNT 累计充电用户数 USERCNT_TOTAL
+   累计充电收入：INCOME_TOTAL 充电站总数-修改为投运充电站数量：TOTAL_CS_CNT-PTS_CS_CNT  正在充电用户数 ：USERCNT_BECRGING 正在充电收入：INCOME_BECRGING  
+   正在使用充电插座数量 BEUSING_CP_CNT 可用（空闲）充电插座数量 USABLE_CP_CNT 不可用（离线）充电插座数量 UNUSABLE_CP_CNT  正在检修充电插座数量  BEREPAIRING_CP_CNT-->
+   <select id="getSsCdzb" resultType="java.util.HashMap">
+	SELECT c.adname,c.adcode,indCode as code,indValue as zbz
+	 FROM ebike.ebike_adcodeind_realtime zb,
+	 ebike.code_adcode c
+	 WHERE c.adcode = zb.adcode and subburo = '000000000' and 
+	 c.adlevel = '1' and indCode in ('CUMCRG_TOTAL_CNT','PTS_CP_CNT','USERCNT_TOTAL'
+	 ,'INCOME_TOTAL','PTS_CS_CNT','USERCNT_BECRGING','INCOME_BECRGING','BEUSING_CP_CNT','USABLE_CP_CNT','UNUSABLE_CP_CNT','BEREPAIRING_CP_CNT')
+	 <if test="subburo != '' and subburo != null">
+        and subburo = #{subburo}
+     </if>
+   </select>
+</mapper>

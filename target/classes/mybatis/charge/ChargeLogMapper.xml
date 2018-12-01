@@ -1,0 +1,19 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="i380v.chargeLog">
+   <!-- 插入日志表-->
+   <insert id="insLogInfo" parameterType="java.util.HashMap" useGeneratedKeys="true" keyProperty="logId">
+       insert into ebike.ebike_log_chargeprepayorder(prepayTime,buro,subburo,chargeplugNo,chargeUserNo,chargeUserType,money,chargeTradeOrderId,
+       businessId,businessModule,enterUserType,enterUserId) 
+       values(SYSDATE(),#{org_no},#{org_no},#{cdczno},#{userno},'10',#{cdje},#{ddid},#{business_id},#{business_type},#{enterUserType},#{enterUserId})
+   </insert>
+   
+   <!-- 插入支付宝日志表-->
+   <insert id="insZfbLogInfo" parameterType="java.util.HashMap" useGeneratedKeys="true" keyProperty="logId">
+       insert into ebike.ebike_log_chargeprepayorder(prepayTime,buro,subburo,chargeplugNo,chargeUserNo,chargeUserType,money,chargeTradeOrderId,
+       businessId,businessModule,enterUserType,enterUserId) 
+       values(SYSDATE(),#{org_no},#{org_no},#{cdczno},#{userno},'20',#{cdje},#{ddid},#{business_id},#{business_type},#{enterUserType},#{enterUserId})
+   </insert>
+</mapper>

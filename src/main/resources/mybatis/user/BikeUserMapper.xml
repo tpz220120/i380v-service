@@ -1,0 +1,35 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ibike.user">
+    <select id="findByWxid" resultType="com.weixin.po.BikeUserPo" parameterType="String">
+        SELECT * FROM ebike.ebike_chargeuser where chargeuserno = #{value}
+    </select>
+    
+    <select id="findTokenByWxno" resultType="String" parameterType="String">
+        SELECT chargeUserToken FROM ebike.ebike_chargeuser where chargeuserno = #{chargeUserNo} limit 0,1
+    </select>
+    
+    <update id="updateById" parameterType="com.weixin.po.BikeUserPo">
+        update ebike.ebike_chargeuser set chargeUserToken = #{chargeUserToken},unionId = #{unionId} where chargeuserno = #{chargeUserNo}
+    </update>
+	
+    <insert id="insert" parameterType="com.weixin.po.BikeUserPo">
+       INSERT into ebike.ebike_chargeuser(chargeUserId,chargeUserNo,chargeUserToken,chargeUserType,chargeUserName,chargeUserPasswd,chargeUserMobile,
+       valid,regTime,effTime,merchantNo) values(#{chargeUserId},
+       #{chargeUserNo},#{chargeUserToken},'10',#{chargeUserName},'',#{chargeUserMobile},
+       'T',now(),now(),#{merchantNo})
+    </insert>
+    
+    <insert id="insertZfbYh" parameterType="com.weixin.po.BikeUserPo">
+       INSERT into ebike.ebike_chargeuser(chargeUserId,chargeUserNo,chargeUserToken,chargeUserType,chargeUserName,chargeUserPasswd,chargeUserMobile,
+       valid,regTime,effTime,merchantNo) values(#{chargeUserId},
+       #{chargeUserNo},#{chargeUserToken},#{chargeUserType},#{chargeUserName},'',#{chargeUserMobile},
+       'T',now(),now(),#{merchantNo})
+    </insert>
+    
+    <update id="updPhoneByWxId" parameterType="com.weixin.po.BikeUserPo">
+        update ebike.ebike_chargeuser set chargeUserMobile = #{chargeUserMobile},effTime = now() where chargeuserno = #{chargeUserNo}
+    </update>
+</mapper>

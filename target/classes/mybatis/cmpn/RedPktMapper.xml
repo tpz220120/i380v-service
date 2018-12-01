@@ -1,0 +1,35 @@
+<!DOCTYPE mapper PUBLIC     
+    "-//mybatis.org//DTD Mapper 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+<mapper namespace="ibike.redpkt">
+   <select id="getRedPkt_Account" resultType="com.weixin.po.RedPktAccountPo" parameterType="java.util.HashMap">
+	    SELECT charge_user_id,round(redpkt_balance,2) as redpkt_balance
+		FROM ebike.ebike_chargeuser user,ebmkt.chargeuser_redpkt_account account
+		WHERE user.chargeUserId = account.charge_user_id
+		and user.chargeUserNo = #{wxid}
+		limit 0,1
+   </select>
+   
+   <!-- 插入红包记录-->
+   <insert id="insert" parameterType="com.weixin.po.RedPktAccountPo">
+	   insert into ebmkt.chargeuser_redpkt_account(charge_user_id,redpkt_balance,create_time,update_time) 
+       values(#{charge_user_id},#{redpkt_balance},SYSDATE(),SYSDATE())
+   </insert>
+   
+   <!-- 更新红包金额-->
+   <update id="updateById" parameterType="com.weixin.po.RedPktAccountPo">
+	   update ebmkt.chargeuser_redpkt_account
+	   set redpkt_balance = redpkt_balance - #{redpkt_balance},
+	   update_time = SYSDATE()
+	   where charge_user_id = #{charge_user_id}
+   </update>
+   
+   <!-- 更新红包金额 流水增加-->
+   <update id="updateAccountById" parameterType="com.weixin.po.RedPktAccountPo">
+	   update ebmkt.chargeuser_redpkt_account
+	   set redpkt_balance = redpkt_balance + #{redpkt_balance},
+	   update_time = SYSDATE()
+	   where charge_user_id = #{charge_user_id}
+   </update>
+</mapper>

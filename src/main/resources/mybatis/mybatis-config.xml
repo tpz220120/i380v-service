@@ -1,0 +1,32 @@
+<!DOCTYPE configuration PUBLIC     
+    "-//mybatis.org//DTD Config 3.0//EN"    
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+    
+<configuration>
+	<typeAliases>
+		<!-- 增加velocity支持 -->
+	 	<typeAlias alias="velocity" type="org.mybatis.scripting.velocity.Driver"/>
+	</typeAliases>
+	
+	<mappers>
+	    <mapper resource="mybatis/charge/ChargePlugMapper.xml"/>
+	    <mapper resource="mybatis/charge/ChargeDevMapper.xml"/>
+	    <mapper resource="mybatis/charge/ChargeStationMapper.xml"/>
+	    <mapper resource="mybatis/charge/ChargeRecordMapper.xml"/>
+	    <mapper resource="mybatis/charge/ChargeLogMapper.xml"/>
+	    <mapper resource="mybatis/user/UserMapper.xml"/>
+	    <mapper resource="mybatis/user/SmsMapper.xml"/>
+	    <mapper resource="mybatis/user/BikeUserMapper.xml"/>
+	    <mapper resource="mybatis/main/MainMapper.xml"/>
+	    <mapper resource="mybatis/khfw/KhfwMapper.xml"/>
+	    <mapper resource="mybatis/khfw/KhfwxxMapper.xml"/>
+	    <mapper resource="mybatis/checkdev/CheckDevMapper.xml"/>
+	    <mapper resource="mybatis/chargeTj/ChargeTjMapper.xml"/>
+	    <mapper resource="mybatis/alarm/AlarmMapper.xml"/>
+	    <mapper resource="mybatis/alarm/AlarmMxMapper.xml"/>
+	    <mapper resource="mybatis/cmpn/CmpnMapper.xml"/>
+	    <mapper resource="mybatis/cmpn/CmpnUserMapper.xml"/>
+	    <mapper resource="mybatis/cmpn/RedPktMapper.xml"/>
+	    <mapper resource="mybatis/cmpn/RedPktFlowMapper.xml"/>
+	</mappers>
+</configuration>
